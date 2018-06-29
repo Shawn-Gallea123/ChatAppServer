@@ -6,12 +6,14 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Scanner;
 
 
 public class ChatAppServer implements Runnable {
 	
 	private static ArrayList<User> users;
-	private static ServerSocket serverSocket;
+	public static ArrayList<Socket> clientSockets;
+	public static ServerSocket serverSocket;
 	private Socket serviceSocket;
 	private PrintWriter out;
 	private BufferedReader in;
@@ -27,27 +29,28 @@ public class ChatAppServer implements Runnable {
 		int SERVER_PORT = -1;
 
 		users = new ArrayList<User>();
+		clientSockets = new ArrayList<Socket>();
 		
 		try {
 			
 			if (SERVER_PORT == -1) {
-				serverSocket = new ServerSocket(0);
+				serverSocket = new ServerSocket(60000);
 				SERVER_PORT = serverSocket.getLocalPort();
 				System.out.println("SERVER_PORT=" + SERVER_PORT);
 				System.out.println(InetAddress.getLocalHost().getHostAddress());
+				new Thread(new InputReader()).start();
 			}
 			
 			while(true) {
 				Socket serviceSocket = serverSocket.accept();
 				System.out.println("Connected");
+				
+				clientSockets.add(serviceSocket);
 				new Thread(new ChatAppServer(serviceSocket)).start();
 				Thread.sleep(100);
 			}
 			
-	
-			
 		} catch (IOException e) {
-			System.out.println("IOEX");
 			return;
 		}
 		
@@ -81,7 +84,7 @@ public class ChatAppServer implements Runnable {
 					System.out.println("Made user: " + tokens[1]);
 					System.out.println("With password: " + tokens[2]);
 					users.add(newUser);
-					out.println("Sign up successful");
+					out.println("MSG/Sign up successful");
 				} else if (receivedMessage != null && receivedMessage.contains("LI")) {
 					// Format of log in message is LI/USERNAME/PASSWORD
 					String[] tokens = receivedMessage.split("/");
@@ -102,14 +105,11 @@ public class ChatAppServer implements Runnable {
 						out.println("Log in unsuccessful");
 						System.out.println("Log in unsuccessful");
 					}
-				} else if (receivedMessage != null) {
-					System.out.println(receivedMessage);
 				} else {
 					Thread.sleep(100);
 				}
 			}
 		} catch (IOException e) {
-			System.out.println("IOEX");
 		} catch (InterruptedException e) {
 			System.out.println("InterruptEX");
 		}
