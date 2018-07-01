@@ -34,6 +34,7 @@ public class InputReader implements Runnable {
 				System.out.println("Killing server");
 				try {
 					ChatAppServer.serverSocket.close();
+					System.exit(0);
 				} catch (IOException e) {
 				}
 				return;

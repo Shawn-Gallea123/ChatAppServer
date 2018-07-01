@@ -56,11 +56,13 @@ public class ChatAppServer implements Runnable {
 		
 	}
 
-	private String buildConvoList() {
+	private String buildConvoList(String userName) {
 		String CL = "CL";
 		
 		for (User u : users) {
-			CL += "/" + u.getUserName();
+			if (!u.getUserName().equals(userName)) {
+				CL += "/" + u.getUserName();
+			}
 		}
 		
 		return CL;
@@ -73,11 +75,7 @@ public class ChatAppServer implements Runnable {
 			while (true) {
 				String receivedMessage = in.readLine();
 			
-				if (receivedMessage != null && receivedMessage.equals("q")) {
-					serviceSocket.close();
-					System.out.println("Exiting");
-					return;
-				} else if (receivedMessage != null && receivedMessage.contains("SU")) {
+				if (receivedMessage != null && receivedMessage.contains("SU")) {
 					// Format of sign up message is SU/USERNAME/PASSWORD
 					String[] tokens = receivedMessage.split("/");
 					User newUser = new User(tokens[1], tokens[2]);
@@ -95,7 +93,7 @@ public class ChatAppServer implements Runnable {
 					for (User user : users) {
 						if (user.checkMatch(userName, passWord)) {
 							System.out.println(userName + " logged in");
-							out.println(buildConvoList());
+							out.println(buildConvoList(userName));
 							found = true;
 							break;
 						}
@@ -105,6 +103,39 @@ public class ChatAppServer implements Runnable {
 						out.println("Log in unsuccessful");
 						System.out.println("Log in unsuccessful");
 					}
+				} else if (receivedMessage != null && receivedMessage.contains("MSG")) {
+					String[] tokens = receivedMessage.split("/");
+					String from = tokens[1];
+					String to = tokens[2];
+					String mes = tokens[3];
+					Message message = new Message(from, mes);
+					
+					int i = 0;
+					int len = users.size();
+					
+					while (true) {
+						
+						if (i == len) {
+							System.out.println("Message sending failed");
+							break;
+						}
+						
+						if (users.get(i).getUserName().equals(to)) {
+							users.get(i).getMessages().add(message);
+							
+							System.out.println("Message sent:");
+							System.out.println("From: " + from);
+							System.out.println("To: " + to);
+							System.out.println("Message: " + mes);
+							
+							break;
+						} else {
+							++i;
+						}
+					}
+					
+					
+					
 				} else {
 					Thread.sleep(100);
 				}
