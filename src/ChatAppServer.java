@@ -6,12 +6,12 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Scanner;
+import java.util.HashMap;
 
 
 public class ChatAppServer implements Runnable {
 	
-	private static ArrayList<User> users;
+	private static HashMap<String, User> Users;
 	public static ArrayList<Socket> clientSockets;
 	public static ServerSocket serverSocket;
 	private Socket serviceSocket;
@@ -28,8 +28,8 @@ public class ChatAppServer implements Runnable {
 	public static void main(String[] args) throws IOException, InterruptedException  {
 		int SERVER_PORT = -1;
 
-		users = new ArrayList<User>();
 		clientSockets = new ArrayList<Socket>();
+		Users = new HashMap<String, User>();
 		
 		try {
 			
@@ -59,9 +59,9 @@ public class ChatAppServer implements Runnable {
 	private String buildConvoList(String userName) {
 		String CL = "CL";
 		
-		for (User u : users) {
-			if (!u.getUserName().equals(userName)) {
-				CL += "/" + u.getUserName();
+		for (String u : Users.keySet()) {
+			if (!u.equals(userName)) {
+				CL += "/" + u;
 			}
 		}
 		
@@ -74,68 +74,46 @@ public class ChatAppServer implements Runnable {
 		try {
 			while (true) {
 				String receivedMessage = in.readLine();
+				
+				if (receivedMessage != null) {
+					System.out.println("Received: " + receivedMessage);
+				}
 			
 				if (receivedMessage != null && receivedMessage.contains("SU")) {
 					// Format of sign up message is SU/USERNAME/PASSWORD
 					String[] tokens = receivedMessage.split("/");
 					User newUser = new User(tokens[1], tokens[2]);
-					System.out.println("Made user: " + tokens[1]);
-					System.out.println("With password: " + tokens[2]);
-					users.add(newUser);
+					Users.put(tokens[1], newUser);
 					out.println("MSG/Sign up successful");
 				} else if (receivedMessage != null && receivedMessage.contains("LI")) {
 					// Format of log in message is LI/USERNAME/PASSWORD
 					String[] tokens = receivedMessage.split("/");
 					String userName = tokens[1];
 					String passWord = tokens[2];
-					boolean found = false;
+					boolean found = false;			
 
-					for (User user : users) {
-						if (user.checkMatch(userName, passWord)) {
+					if (Users.containsKey(tokens[1])) {
+						if (Users.get(tokens[1]).getPassWord().equals(passWord)) {
 							System.out.println(userName + " logged in");
 							out.println(buildConvoList(userName));
 							found = true;
-							break;
 						}
 					}
-				
+					
 					if (!found) {
 						out.println("Log in unsuccessful");
 						System.out.println("Log in unsuccessful");
 					}
+					
 				} else if (receivedMessage != null && receivedMessage.contains("MSG")) {
+					
 					String[] tokens = receivedMessage.split("/");
 					String from = tokens[1];
 					String to = tokens[2];
 					String mes = tokens[3];
 					Message message = new Message(from, mes);
-					
-					int i = 0;
-					int len = users.size();
-					
-					while (true) {
-						
-						if (i == len) {
-							System.out.println("Message sending failed");
-							break;
-						}
-						
-						if (users.get(i).getUserName().equals(to)) {
-							users.get(i).getMessages().add(message);
-							
-							System.out.println("Message sent:");
-							System.out.println("From: " + from);
-							System.out.println("To: " + to);
-							System.out.println("Message: " + mes);
-							
-							break;
-						} else {
-							++i;
-						}
-					}
-					
-					
-					
+					Users.get(to).getMessages().add(message);
+				
 				} else {
 					Thread.sleep(100);
 				}

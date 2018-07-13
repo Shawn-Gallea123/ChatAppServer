@@ -23,6 +23,9 @@ public class User {
 		return messages;
 	}
 	
+	public String getPassWord() {
+		return passWord;
+	}
 	
 	
 }
